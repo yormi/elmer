@@ -1,4 +1,4 @@
-var _brian_watkins$elmer$Native_Http = function() {
+var _yormi$elmer$Native_Http = function() {
 
   var getHttpRequestBody = function(requestData) {
     var bodyType = requestData.body.ctor
@@ -10,7 +10,7 @@ var _brian_watkins$elmer$Native_Http = function() {
   }
 
   var asHttpHeader = function(headerData) {
-    return A2(_brian_watkins$elmer$Elmer_Http_Internal$HttpHeader,
+    return A2(_yormi$elmer$Elmer_Http_Internal$HttpHeader,
       headerData._0,
       headerData._1)
   }
@@ -29,14 +29,14 @@ var _brian_watkins$elmer$Native_Http = function() {
   var asHttpRequestHandler = function(request) {
     var requestData = request._0
 
-    var httpRequest = A4(_brian_watkins$elmer$Elmer_Http_Internal$HttpRequest,
+    var httpRequest = A4(_yormi$elmer$Elmer_Http_Internal$HttpRequest,
       requestData.method,
       requestData.url,
       getHttpHeaders(requestData),
       getHttpRequestBody(requestData)
     );
 
-    return A2(_brian_watkins$elmer$Elmer_Http_Internal$HttpRequestHandler,
+    return A2(_yormi$elmer$Elmer_Http_Internal$HttpRequestHandler,
       httpRequest,
       requestData.expect.responseToResult
     );
