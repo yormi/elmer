@@ -132,12 +132,18 @@ var _brian_watkins$elmer$Native_Spy = function() {
     return spyCalls;
   }
 
+
+  var hasSameName = function(s1, s2) {
+    return s1.name === s2.name
+  }
+
   return {
-      create: F2(create),
-      deactivate: deactivate,
-      activate: activate,
-      calls: calls,
-      registerFake: F2(registerFake)
+    hasSameName: F2(hasSameName),
+    create: F2(create),
+    deactivate: deactivate,
+    activate: activate,
+    calls: calls,
+    registerFake: F2(registerFake)
   };
 
 }();

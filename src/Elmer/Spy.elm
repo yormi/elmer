@@ -1,22 +1,30 @@
-module Elmer.Spy exposing
-  ( Spy
-  , Calls
-  , create
-  , andCallFake
-  , expect
-  , use
-  )
+module Elmer.Spy
+    exposing
+        ( Spy
+        , Calls
+        , create
+        , andCallFake
+        , expect
+        , use
+        , withStubs
+        )
 
 {-| Functions for spying during tests.
 
+
 # Spy on a Function
+
 @docs Spy, Calls, create, expect
 
+
 # Provide a Fake Implementation
+
 @docs andCallFake
 
+
 # Use a Spy
-@docs use
+
+@docs use, withStubs
 
 -}
 
@@ -26,15 +34,18 @@ import Elmer.TestState as TestState
 import Elmer.Spy.Internal as Spy_ exposing (Spy(..))
 import Elmer.Printer exposing (..)
 
+
 {-| Represents a function that has been spied on.
 -}
 type alias Spy =
-  Spy_.Spy
+    Spy_.Spy
+
 
 {-| Represents the calls made to a spy.
 -}
 type alias Calls =
-  Spy_.Calls
+    Spy_.Calls
+
 
 {-| Create a spy for a function.
 
@@ -56,16 +67,18 @@ through to the original function.
 -}
 create : String -> (() -> a) -> Spy
 create name namingFunc =
-  Spy_.Uninstalled <|
-    \() ->
-      Spy_.create name namingFunc
+    Spy_.Uninstalled <|
+        \() ->
+            Spy_.create name namingFunc
+
 
 {-| Call the provided function when a Spy is called.
 
 Once you've created a `Spy`, you can provide a fake implementation like so:
 
-    mySpy = create "my-spy" (\_ -> MyComponent.someFunction)
-      |> andCallFake testImplementation
+    mySpy =
+        create "my-spy" (\_ -> MyComponent.someFunction)
+            |> andCallFake testImplementation
 
 where `testImplementation` is some function with the very same signature as
 the one being spied upon.
@@ -90,20 +103,23 @@ via `use`.
 -}
 andCallFake : (a -> b) -> Spy -> Spy
 andCallFake fakeFunction spy =
-  case spy of
-    Uninstalled installer ->
-      Spy_.Uninstalled <|
-        \() ->
-          let
-            installed = installer ()
-          in
-            case installed of
-              Active spyValue ->
-                Native.Spy.registerFake spyValue fakeFunction
-              _ ->
-                installed
-    _ ->
-      spy
+    case spy of
+        Uninstalled installer ->
+            Spy_.Uninstalled <|
+                \() ->
+                    let
+                        installed =
+                            installer ()
+                    in
+                        case installed of
+                            Active spyValue ->
+                                Native.Spy.registerFake spyValue fakeFunction
+
+                            _ ->
+                                installed
+
+        _ ->
+            spy
 
 
 {-| Make an expectation about a spy.
@@ -119,17 +135,20 @@ See `Elmer.Spy.Matchers` for matchers to use with this function.
 -}
 expect : String -> Matcher Calls -> Elmer.TestState model msg -> Expect.Expectation
 expect name matcher =
-  TestState.mapToExpectation (\context ->
-    case Spy_.calls name context.spies of
-      Just calls ->
-        matcher calls
-      Nothing ->
-        Expect.fail <|
-          format
-            [ message "Attempted to make expectations about a spy" name
-            , description "but it has not been registered as a spy"
-            ]
-  )
+    TestState.mapToExpectation
+        (\context ->
+            case Spy_.calls name context.spies of
+                Just calls ->
+                    matcher calls
+
+                Nothing ->
+                    Expect.fail <|
+                        format
+                            [ message "Attempted to make expectations about a spy" name
+                            , description "but it has not been registered as a spy"
+                            ]
+        )
+
 
 {-| Install spies for use during the test.
 
@@ -159,41 +178,104 @@ Note: If you need to replace a spy during the course of a test, you may
 call `use` again with the new spy. Each time you call `use` *all* spies
 will be removed. So be sure that each time you call `use` you register all
 the spies you need.
+
 -}
 use : List Spy -> Elmer.TestState model msg -> Elmer.TestState model msg
 use spies =
-  TestState.mapWithoutSpies (\context ->
-    let
-      activated = Spy_.activate spies
-      errors = takeErrors activated
-    in
-      if List.isEmpty errors then
-        TestState.with { context | spies = Spy_.deactivate activated }
-      else
-        TestState.failure <|
-          format
-            [ message "Failed to activate spies" <| failedSpies errors ]
-  )
+    TestState.mapWithoutSpies
+        (\context ->
+            let
+                activated =
+                    Spy_.activate spies
+
+                errors =
+                    takeErrors activated
+            in
+                if List.isEmpty errors then
+                    TestState.with { context | spies = Spy_.deactivate activated }
+                else
+                    TestState.failure <|
+                        format
+                            [ message "Failed to activate spies" <| failedSpies errors ]
+        )
+
+
+{-| Install additional spies just for executing the provided function.
+
+Uninstall the additional spies after the function execution.
+
+This is ideal for making custom actions reusable in your tests without having to always install the
+necessary stubs.
+
+-}
+withStubs :
+    List Spy
+    -> (Elmer.TestState model msg -> Elmer.TestState model msg)
+    -> Elmer.TestState model msg
+    -> Elmer.TestState model msg
+withStubs tempStubs action =
+    TestState.mapWithoutSpies
+        (\context ->
+            let
+                oldSpies =
+                    context.spies
+
+                spiesForAction =
+                    List.append oldSpies tempStubs
+            in
+                context
+                    |> TestState.with
+                    |> use spiesForAction
+                    |> action
+                    |> removeTempStubs oldSpies
+        )
+
+
+removeTempStubs : List Spy -> Elmer.TestState model msg -> Elmer.TestState model msg
+removeTempStubs permanentSpies =
+    TestState.mapWithoutSpies
+        (\context ->
+            let
+                spiesWithoutTemps =
+                    List.filter
+                        (\s ->
+                            permanentSpies
+                                |> List.map (Spy_.hasSameName s)
+                                |> List.foldl (||) False
+                        )
+                        context.spies
+            in
+                context
+                    |> TestState.with
+                    |> use spiesWithoutTemps
+        )
+
 
 failedSpies : List Spy -> String
 failedSpies spies =
-  List.filterMap (\spy ->
-    case spy of
-      Error spyValue ->
-        Native.Spy.calls spyValue
-          |> .name
-          |> Just
-      _ ->
-        Nothing
-  ) spies
-    |> String.join "\n"
+    List.filterMap
+        (\spy ->
+            case spy of
+                Error spyValue ->
+                    Native.Spy.calls spyValue
+                        |> .name
+                        |> Just
+
+                _ ->
+                    Nothing
+        )
+        spies
+        |> String.join "\n"
+
 
 takeErrors : List Spy -> List Spy
 takeErrors =
-  List.filter (\spy ->
-    case spy of
-      Error spyValue ->
-        True
-      _ ->
-        False
-  )
+    List.filter
+        (\spy ->
+            case spy of
+                Error spyValue ->
+                    True
+
+                _ ->
+                    False
+        )
