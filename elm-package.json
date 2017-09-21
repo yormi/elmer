@@ -1,7 +1,7 @@
 {
     "version": "3.1.1",
     "summary": "Behavior-driven development for Elm Html applications",
-    "repository": "https://github.com/brian-watkins/elmer.git",
+    "repository": "https://github.com/yormi/elmer.git",
     "license": "MIT",
     "source-directories": [
         "src"
