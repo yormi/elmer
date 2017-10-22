@@ -49,15 +49,21 @@ var _yormi$elmer$Native_Html = function() {
     return _elm_lang$core$Native_List.fromArray(all);
   }
 
-  var constructHtmlElement = function(html, inheritedEventHandlers, tagger) {
-    var node = html;
-    if (html.type == "tagger") {
+  var composeTagger = function (f, g) {
+    if (!g) return f
+
+    return function (a) { return f(g(a)) }
+  }
+
+  var constructHtmlElement = function (html, inheritedEventHandlers, tagger) {
+    var node = html
+    if (html.type === 'tagger') {
       node = html.node
-      tagger = html.tagger
+      tagger = tagger ? composeTagger(tagger, html.tagger) : html.tagger
     }
 
-    var eventHandlers = getHtmlEventHandlers(node, tagger);
-    var eventHandlersToInherit = concatLists(inheritedEventHandlers, eventHandlers);
+    var eventHandlers = getHtmlEventHandlers(node, tagger)
+    var eventHandlersToInherit = concatLists(inheritedEventHandlers, eventHandlers)
 
     return A5(_yormi$elmer$Elmer_Html_Types$HtmlElement,
       node.tag,
@@ -65,7 +71,7 @@ var _yormi$elmer$Native_Html = function() {
       getChildren(node, eventHandlersToInherit, tagger),
       inheritedEventHandlers,
       eventHandlers
-    );
+    )
   }
 
   var asHtmlElement = function(html) {
@@ -79,7 +85,7 @@ var _yormi$elmer$Native_Html = function() {
   }
 
   return {
-      asHtmlElement: asHtmlElement
+    asHtmlElement: asHtmlElement
   };
 
 }();

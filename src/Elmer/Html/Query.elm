@@ -12,7 +12,6 @@ import Elmer.Html.Internal as Html_
 import Elmer.Context as Context exposing (Context)
 import Dict exposing (Dict)
 import Html exposing (Html)
-import Json.Decode as Json
 import Regex exposing (Regex)
 
 
