@@ -80,16 +80,30 @@ app =
 
 htmlMapTest : Test
 htmlMapTest =
-    describe "When using nested Html.map"
-        [ test "Correct Msg is sent to update function" <|
-            \_ ->
-                let
-                    expected =
-                        HtmlM.element <|
-                            HtmlM.hasText expectedText
-                in
-                    app
-                        |> Html.target "button"
-                        |> Event.click
-                        |> Html.expect expected
-        ]
+    only <|
+        describe "When using nested Html.map"
+            [ test "Correct Msg is sent to update function" <|
+                \_ ->
+                    let
+                        expected =
+                            HtmlM.element <|
+                                HtmlM.hasText expectedText
+                    in
+                        app
+                            |> Html.target "button"
+                            |> Event.click
+                            |> Html.expect expected
+            , test "No problem for the second event" <|
+                \_ ->
+                    let
+                        expected =
+                            HtmlM.element <|
+                                HtmlM.hasText expectedText
+                    in
+                        app
+                            |> Html.target "button"
+                            |> Event.click
+                            |> Html.target "button"
+                            |> Event.click
+                            |> Html.expect expected
+            ]

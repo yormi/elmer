@@ -1,22 +1,40 @@
-var _yormi$elmer$Native_Html = function() {
+var _yormi$elmer$Native_Html = function () {
+  const isSimpleTextElement = function (element) {
+    const isTagger = e => e.type === 'tagger'
 
-  var getChildren = function(html, inheritedEventHandlers, tagger) {
-    var children = []
-    for (var i = 0; i < html.children.length; i++) {
-      var element = html.children[i]
-      if (element.type == "text") {
-        children.push(_yormi$elmer$Elmer_Html_Types$Text(element.text))
-      } else {
-        children.push(_yormi$elmer$Elmer_Html_Types$Element(constructHtmlElement(element, inheritedEventHandlers, tagger)))
+    const isText = e => e.type === 'text'
+
+    if (isText(element)) return true
+
+    if (isTagger(element) && isText(element.node)) return true
+
+    return false
+  }
+
+  var getChildren = function (html, inheritedEventHandlers, tagger) {
+    const children = html.children.map(function (element) {
+      if (isSimpleTextElement(element)) {
+        const elmTextHtml = _yormi$elmer$Elmer_Html_Types$Text(element.text)
+        return elmTextHtml
       }
-    }
+
+      const jsHtml = constructHtmlElement(
+        element,
+        inheritedEventHandlers,
+        tagger
+      )
+
+      const elmHtml =  _yormi$elmer$Elmer_Html_Types$Element(jsHtml)
+      return elmHtml
+    })
 
     return _elm_lang$core$Native_List.fromArray(children)
   }
 
   var getHtmlEventHandlers = function(html, tagger) {
     var events = []
-    if (html.facts.EVENT) {
+
+    if (html.facts && html.facts.EVENT) {
       for (var eventType in html.facts.EVENT) {
         var decoder = html.facts.EVENT[eventType].decoder
         if (tagger) {
@@ -60,6 +78,7 @@ var _yormi$elmer$Native_Html = function() {
     if (html.type === 'tagger') {
       node = html.node
       tagger = tagger ? composeTagger(tagger, html.tagger) : html.tagger
+      return constructHtmlElement(node, inheritedEventHandlers, tagger)
     }
 
     var eventHandlers = getHtmlEventHandlers(node, tagger)
